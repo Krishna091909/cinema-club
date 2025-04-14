@@ -7,3 +7,7 @@ google-auth
 gspread
 oauth2client
 flask
+telethon
+cryptg 
+aiohttp
+python-dotenv
