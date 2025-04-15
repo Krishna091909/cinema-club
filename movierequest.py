@@ -77,6 +77,7 @@ async def button_click(update: Update, context: CallbackContext):
     query = update.callback_query
     data = query.data
 
+    # Check for page navigation buttons
     if data == "previous_page":
         context.user_data["page"] -= 1
     elif data == "next_page":
