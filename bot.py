@@ -104,6 +104,10 @@ def main():
     tg_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_movie_request))
     tg_app.add_handler(CallbackQueryHandler(send_movie))  # handles movie selection
 
+    application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_movie_request))
+    application.add_handler(CallbackQueryHandler(button_click))
+
+
     
 
     print("Bot is running...")
