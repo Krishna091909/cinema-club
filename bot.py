@@ -104,6 +104,8 @@ def main():
     tg_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_movie_request))
     tg_app.add_handler(CallbackQueryHandler(send_movie))  # handles movie selection
 
+    
+
     print("Bot is running...")
     tg_app.run_polling()
 
