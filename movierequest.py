@@ -20,7 +20,7 @@ async def handle_movie_request(update: Update, context: CallbackContext):
     # Store user message to delete later
     context.user_data["last_search_message"] = update.message
 
-    # Set the default page number
+    # Set the default page number if not set
     if "page" not in context.user_data:
         context.user_data["page"] = 0
 
@@ -40,13 +40,20 @@ async def handle_movie_request(update: Update, context: CallbackContext):
 
     # Create pagination buttons
     navigation_buttons = []
+    # Previous button
     if context.user_data["page"] > 0:
         navigation_buttons.append(InlineKeyboardButton("⬅️ Previous", callback_data="previous_page"))
+    
+    # Current page / total pages
+    page_info = f"Page {context.user_data['page'] + 1}/{total_pages}"
+
+    # Next button
     if context.user_data["page"] < total_pages - 1:
         navigation_buttons.append(InlineKeyboardButton("Next ➡️", callback_data="next_page"))
 
     # Add page information and navigation buttons to the keyboard
     if navigation_buttons:
+        keyboard.append([InlineKeyboardButton(page_info, callback_data="no_action")])
         keyboard.append(navigation_buttons)
 
     # Send message with movie list and pagination
