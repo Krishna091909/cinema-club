@@ -1,33 +1,58 @@
-from loadmovies import remove_movie
-from telegram import Update
-from telegram.ext import CallbackContext
-from deletemessages import delete_message_later
-import os
 import asyncio
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import CallbackContext
+from loadmovies import load_movies
+from deletemessages import delete_message_later
 
-OWNER_ID = int(os.getenv("OWNER_ID", "0"))  # Default to 0 if not set
+import os
 
-async def remove_movie_command(update: Update, context: CallbackContext):
-    # Delete user message after 5 mins
-    asyncio.create_task(delete_message_later(update.message, 300))
+FILMSTREAM_BOT_USERNAME = os.getenv("FILMSTREAM_BOT_USERNAME")
 
-    # Check if the user is authorized
-    if update.message.from_user.id != OWNER_ID:
-        msg = await update.message.reply_text("🚫 You are not authorized to use this command.")
-        asyncio.create_task(delete_message_later(msg, 300))
-        return
 
-    # Ensure a movie name is provided
-    if not context.args:
-        msg = await update.message.reply_text("❌ Please provide a movie name to remove. Usage: /removemovie <movie_name>")
-        asyncio.create_task(delete_message_later(msg, 300))
-        return
+async def send_movie(update: Update, context: CallbackContext):
+    query = update.callback_query
+    await query.answer()
 
-    movie_name = " ".join(context.args)  # Combine all arguments into a single movie name
-    if remove_movie(movie_name):  # Call the function that actually removes the movie
-        msg = await update.message.reply_text(f"🗑️ Movie '{movie_name}' removed successfully!")
+    movie_name = query.data
+    movies = load_movies()
+    movie_data = movies.get(movie_name)
+
+    if movie_data:
+        user_id = query.from_user.id  
+        file_id = movie_data["file_id"]
+        file_size = movie_data["file_size"]
+        file_name = movie_data["file_name"]
+
+        # Create button to open Filestream bot
+        keyboard = [
+            [InlineKeyboardButton("🚀 Open Fast Download Bot", url=f"https://t.me/{FILMSTREAM_BOT_USERNAME}")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        # Send movie document with instruction and button
+        await context.bot.send_document(
+            chat_id=user_id,
+            document=file_id,
+            caption=(
+                f"🎬 *{file_name}*\n\n"
+                f"📦 *Size:* {file_size}\n\n"
+                f"🤖 𝐅𝐨𝐫𝐰𝐚𝐫𝐝 𝐭𝐡𝐢𝐬 𝐟𝐢𝐥𝐞 𝐭𝐨 @{FILMSTREAM_BOT_USERNAME} 𝐭𝐨 𝐠𝐞𝐭 𝐅𝐚𝐬𝐭 𝐃𝐨𝐰𝐧𝐥𝐨𝐚𝐝"
+            ),
+            parse_mode="Markdown",
+            reply_markup=reply_markup
+        )
+
+        # Delete inline button message after 5 minutes
+        user_message = query.message  
+        asyncio.create_task(delete_message_later(user_message, 300))
+
+        # Delete user's search message after 5 minutes
+        search_message = context.user_data.get("last_search_message")
+        if search_message:
+            asyncio.create_task(delete_message_later(search_message, 300))
+            context.user_data["last_search_message"] = None
+
     else:
-        msg = await update.message.reply_text("❌ Movie not found!")
-
-    # Delete bot response after 5 mins
-    asyncio.create_task(delete_message_later(msg, 300))
+        error_msg = await query.message.reply_text("❌ Movie not found.")
+        await asyncio.sleep(5)
+        asyncio.create_task(delete_message_later(error_msg, 300))
